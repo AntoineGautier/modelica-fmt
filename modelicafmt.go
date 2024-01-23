@@ -5,8 +5,10 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
@@ -32,6 +34,7 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 		parser.IAlgorithm_statementsContext,
 		parser.IControl_structure_bodyContext,
 		parser.IAnnotationContext,
+		parser.IEnumeration_literalContext,
 		parser.IExpression_listContext,
 		parser.IConstraining_clauseContext,
 		parser.IIf_expressionContext,
@@ -79,8 +82,8 @@ func insertSpaceBeforeToken(currentTokenText, previousTokenText string) bool {
 		}
 		fallthrough
 	default:
-		return !tokenInGroup(previousTokenText, noSpaceAfterTokens) &&
-			!tokenInGroup(currentTokenText, noSpaceBeforeTokens)
+		return !tokenInGroup(previousTokenText, noSpaceAfterTokens, false) &&
+			!tokenInGroup(currentTokenText, noSpaceBeforeTokens, false)
 	}
 }
 
@@ -89,6 +92,7 @@ func insertNewlineBefore(rule antlr.ParserRuleContext) bool {
 	switch rule.(type) {
 	case
 		parser.ICompositionContext,
+		parser.IEnumeration_literalContext,
 		parser.IEquationsContext,
 		parser.IIf_expression_conditionContext,
 		parser.IElseif_expression_conditionContext,
@@ -105,6 +109,8 @@ var (
 	noSpaceAfterTokens = []string{
 		"(",
 		"=",
+		"==",
+		"<>",
 		".",
 		"[",
 		"{",
@@ -122,6 +128,8 @@ var (
 		"}",
 		";",
 		"=",
+		"==",
+		"<>",
 		",",
 		".",
 		"-", "+", "^", "*", "/",
@@ -129,17 +137,65 @@ var (
 	}
 
 	allowBreakAfterTokens = []string{
+		"+",
 		"=",
-		",",
-		"(",
+		"==",
+		"<>",
+		"if",
+		"then",
+		"else",
+		"and",
+		"or",
+	}
+
+	allowBreakBeforeTokens = []string{
+		`".*"`,
+		"choices",
+		"choice",
+		"choicesAllMatching",
+		"color",
+		"Dialog",
+		"enable",
+		"extent",
+		"group",
+		"if",
+		"then",
+		"else",
+		"and",
+		"or",
+		"horizontalAlignment",
+		"iconTransformation",
+		"Line",
+		"Polygon",
+		"Rectangle",
+		"Ellipse",
+		"Text",
+		"Bitmap",
+		"origin",
+		"Placement",
+		"points",
+		"rotation",
+		"transformation",
+		"visible",
 	}
 )
 
 // tokenInGroup returns true if a token is in a given list
-func tokenInGroup(token string, group []string) bool {
+func tokenInGroup(token string, group []string, useRegex bool) bool {
 	for _, other := range group {
-		if token == other {
-			return true
+		if useRegex {
+			matched, err := regexp.MatchString(other, token)
+			if err != nil {
+				fmt.Println("Regex is faulty.")
+				return false
+			}
+			if (matched) {
+				return true
+			}
+		} else {
+			if token == other {
+				return true
+			}
 		}
 	}
 	return false
@@ -287,7 +343,8 @@ func (l *modelicaListener) writeString(str string) {
 	var actualSpacePrefix string
 	if l.config.maxLineLength > 0 &&
 		l.currentLineLength+charsOnFirstLine > l.config.maxLineLength &&
-		tokenInGroup(l.previousTokenText, allowBreakAfterTokens) {
+		(tokenInGroup(l.previousTokenText, allowBreakAfterTokens, false) ||
+		 tokenInGroup(str, allowBreakBeforeTokens, true)){
 
 		l.writeNewline()
 		l.maybeIndent()
