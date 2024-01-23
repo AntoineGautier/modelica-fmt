@@ -48,7 +48,8 @@ model building
   ICT ict
     annotation (Placement(transformation(extent={{40,-20},{60,0}})));
   Buildings.Controls.OBC.CDL.Continuous.MultiSum mulSum(
-    nin=2) if have_pum
+    nin=2)
+    if have_pum
     annotation (Placement(transformation(extent={{260,70},{280,90}})));
   Buildings.Applications.DHC.Loads.Examples.BaseClasses.FanCoil4PipeHeatPorts terUni[nZon](
     redeclare each package Medium1=MediumW,

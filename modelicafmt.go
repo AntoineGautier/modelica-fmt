@@ -5,7 +5,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -35,6 +34,7 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 		parser.IControl_structure_bodyContext,
 		parser.IAnnotationContext,
 		parser.IEnumeration_literalContext,
+		parser.ICondition_attributeContext,
 		parser.IExpression_listContext,
 		parser.IConstraining_clauseContext,
 		parser.IIf_expressionContext,
@@ -46,7 +46,16 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 	case
 		parser.IArgumentContext,
 		parser.INamed_argumentContext:
-		return 0 == l.inAnnotation || 0 < l.inModelAnnotation
+		if 0 == l.inAnnotation || 0 < l.inModelAnnotation {
+			return true
+		} else if 0 < l.inAnnotation {  // BUG: Despite within insertIndentBefore, the following rule yields no incremental indentation.
+			matched, _ := regexp.MatchString(
+				"choicesAllMatching|choices|choice|enable|iconTransformation|Placement|Dialog",
+				rule.GetText())
+			return (matched) && l.previousTokenText != "("
+		} else {
+			return false
+		}
 	case parser.IExpressionContext:
 		if len(l.modelAnnotationVectorStack) == 0 {
 			return false
@@ -83,17 +92,18 @@ func insertSpaceBeforeToken(currentTokenText, previousTokenText string) bool {
 		fallthrough
 	default:
 		return !tokenInGroup(previousTokenText, noSpaceAfterTokens, false) &&
-			!tokenInGroup(currentTokenText, noSpaceBeforeTokens, false)
+			   !tokenInGroup(currentTokenText, noSpaceBeforeTokens, false)
 	}
 }
 
 // insertNewlineBefore returns true if the rule should be on a new line
-func insertNewlineBefore(rule antlr.ParserRuleContext) bool {
+func (l *modelicaListener) insertNewlineBefore(rule antlr.ParserRuleContext) bool {
 	switch rule.(type) {
 	case
 		parser.ICompositionContext,
 		parser.IEnumeration_literalContext,
 		parser.IEquationsContext,
+		parser.ICondition_attributeContext,
 		parser.IIf_expression_conditionContext,
 		parser.IElseif_expression_conditionContext,
 		parser.IElse_expression_conditionContext:
@@ -137,6 +147,7 @@ var (
 	}
 
 	allowBreakAfterTokens = []string{
+		";",
 		"+",
 		"=",
 		"==",
@@ -148,35 +159,30 @@ var (
 		"or",
 	}
 
+	// Search for the following patterns is done with regexp.MatchString()
+	// Use "^word$" to search exactly "word"
 	allowBreakBeforeTokens = []string{
-		`".*"`,
-		"choices",
-		"choice",
-		"choicesAllMatching",
-		"color",
-		"Dialog",
-		"enable",
-		"extent",
-		"group",
-		"if",
-		"then",
-		"else",
-		"and",
-		"or",
-		"horizontalAlignment",
-		"iconTransformation",
-		"Line",
-		"Polygon",
-		"Rectangle",
-		"Ellipse",
-		"Text",
-		"Bitmap",
-		"origin",
-		"Placement",
-		"points",
-		"rotation",
-		"transformation",
-		"visible",
+		"\".*\"",
+		"^color$",
+		"^extent$",
+		"^group$",
+		// "^if$",
+		// "^then$",
+		// "^else$",
+		"^and$",
+		"^or$",
+		"^horizontalAlignment$",
+		"^Line$",
+		"^Polygon$",
+		"^Rectangle$",
+		"^Ellipse$",
+		"^Text$",
+		"^Bitmap$",
+		"^origin$",
+		"^points$",
+		"^rotation$",
+		"^transformation$",
+		"^visible$",
 	}
 )
 
@@ -184,11 +190,7 @@ var (
 func tokenInGroup(token string, group []string, useRegex bool) bool {
 	for _, other := range group {
 		if useRegex {
-			matched, err := regexp.MatchString(other, token)
-			if err != nil {
-				fmt.Println("Regex is faulty.")
-				return false
-			}
+			matched, _ := regexp.MatchString(other, token)
 			if (matched) {
 				return true
 			}
@@ -324,7 +326,9 @@ func (l *modelicaListener) maybeIndent() {
 
 // maybeDedent should be called when the writer's indentation is to be decreased
 func (l *modelicaListener) maybeDedent() {
-	l.indentationStack = l.indentationStack[:len(l.indentationStack)-1]
+	if len(l.indentationStack) > 0 {
+		l.indentationStack = l.indentationStack[:len(l.indentationStack)-1]
+	}
 }
 
 // writeString writes a string to the listener's output
@@ -342,9 +346,10 @@ func (l *modelicaListener) writeString(str string) {
 	// break the line if writing this string would make it too long and the previous token is breakable
 	var actualSpacePrefix string
 	if l.config.maxLineLength > 0 &&
-		l.currentLineLength+charsOnFirstLine > l.config.maxLineLength &&
-		(tokenInGroup(l.previousTokenText, allowBreakAfterTokens, false) ||
-		 tokenInGroup(str, allowBreakBeforeTokens, true)){
+	   l.currentLineLength+charsOnFirstLine > l.config.maxLineLength &&
+	   !l.onNewLine &&
+	   (tokenInGroup(l.previousTokenText, allowBreakAfterTokens, false) ||
+	   tokenInGroup(str, allowBreakBeforeTokens, true)){
 
 		l.writeNewline()
 		l.maybeIndent()
@@ -459,7 +464,7 @@ func (l *modelicaListener) VisitTerminal(node antlr.TerminalNode) {
 }
 
 func (l *modelicaListener) EnterEveryRule(node antlr.ParserRuleContext) {
-	if insertNewlineBefore(node) && !l.onNewLine {
+	if l.insertNewlineBefore(node) && !l.onNewLine {
 		l.writeNewline()
 	}
 

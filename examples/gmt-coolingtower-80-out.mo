@@ -30,8 +30,9 @@ model Merkel
   replaceable parameter Buildings.Fluid.HeatExchangers.CoolingTowers.Data.UAMerkel UACor
     constrainedby Buildings.Fluid.HeatExchangers.CoolingTowers.Data.UAMerkel
     "Coefficients for UA correction"
-    annotation (Dialog(group="Heat transfer"),choicesAllMatching=true,Placement(
-      transformation(extent={{18,70},{38,90}})));
+    annotation (Dialog(group="Heat transfer"),
+    choicesAllMatching=true,
+    Placement(transformation(extent={{18,70},{38,90}})));
   parameter Real fraPFan_nominal(
     unit="W/(kg/s)")=275/0.15
     "Fan power divided by water mass flow rate at design condition"
@@ -51,8 +52,9 @@ model Merkel
     r_P={0,0.1^3,0.3^3,0.6^3,1})
     constrainedby cha.fan
     "Fan relative power consumption as a function of control signal, fanRelPow=P(y)/P(y=1)"
-    annotation (choicesAllMatching=true,Placement(transformation(extent={{58,70},{78,90}})),
-      Dialog(group="Fan"));
+    annotation (choicesAllMatching=true,
+    Placement(transformation(extent={{58,70},{78,90}})),
+    Dialog(group="Fan"));
   final parameter Modelica.SIunits.HeatFlowRate Q_flow_nominal(
     max=0)=per.Q_flow_nominal
     "Nominal heat transfer, (negative)";
