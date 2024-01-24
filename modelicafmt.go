@@ -37,8 +37,6 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 		parser.ICondition_attributeContext,
 		parser.IExpression_listContext,
 		parser.IConstraining_clauseContext,
-		parser.IIf_expressionContext,
-		parser.IIf_expression_bodyContext,
 		parser.IExternal_function_call_argumentContext:
 		return true
 	case parser.IString_commentContext:
@@ -50,7 +48,7 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 			return true
 		} else if 0 < l.inAnnotation {  // BUG: Despite within insertIndentBefore, the following rule yields no incremental indentation.
 			matched, _ := regexp.MatchString(
-				"choicesAllMatching|choices|choice|enable|iconTransformation|Placement|Dialog",
+				"choice|^enable|iconTransformation|Placement|Dialog|Evaluate|^__",
 				rule.GetText())
 			return (matched) && l.previousTokenText != "("
 		} else {
@@ -85,8 +83,11 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 func insertSpaceBeforeToken(currentTokenText, previousTokenText string) bool {
 	switch currentTokenText {
 	case "(":
-		// add a space between 'annotation' and opening parens
-		if previousTokenText == "annotation" {
+		// add a space before opening parens for the following exceptions
+		matched, _ := regexp.MatchString(
+			"annotation|if|then|and|else",
+			previousTokenText)
+		if (matched) {
 			return true
 		}
 		fallthrough
@@ -103,10 +104,7 @@ func (l *modelicaListener) insertNewlineBefore(rule antlr.ParserRuleContext) boo
 		parser.ICompositionContext,
 		parser.IEnumeration_literalContext,
 		parser.IEquationsContext,
-		parser.ICondition_attributeContext,
-		parser.IIf_expression_conditionContext,
-		parser.IElseif_expression_conditionContext,
-		parser.IElse_expression_conditionContext:
+		parser.ICondition_attributeContext:
 		return true
 	default:
 		return false
@@ -152,37 +150,33 @@ var (
 		"=",
 		"==",
 		"<>",
-		"if",
-		"then",
-		"else",
-		"and",
-		"or",
 	}
 
-	// Search for the following patterns is done with regexp.MatchString()
-	// Use "^word$" to search exactly "word"
+	// search for the following patterns is done with regexp.MatchString()
+	// use "\\bword\\b" to search exactly "word"
 	allowBreakBeforeTokens = []string{
 		"\".*\"",
-		"^color$",
-		"^extent$",
-		"^group$",
-		// "^if$",
-		// "^then$",
-		// "^else$",
-		"^and$",
-		"^or$",
-		"^horizontalAlignment$",
-		"^Line$",
-		"^Polygon$",
-		"^Rectangle$",
-		"^Ellipse$",
-		"^Text$",
-		"^Bitmap$",
-		"^origin$",
-		"^points$",
-		"^rotation$",
-		"^transformation$",
-		"^visible$",
+		"\\bcolor\\b",
+		"\\bextent\\b",
+		"\\bgroup\\b",
+		"\\bif\\b",
+		"\\bthen\\b",
+		"\\belse\\b",
+		"\\belseif\\b",
+		"\\band\\b",
+		"\\bor\\b",
+		"\\bhorizontalAlignment\\b",
+		"\\bLine\\b",
+		"\\bPolygon\\b",
+		"\\bRectangle\\b",
+		"\\bEllipse\\b",
+		"\\bText\\b",
+		"\\bBitmap\\b",
+		"\\borigin\\b",
+		"\\bpoints\\b",
+		"\\brotation\\b",
+		"\\btransformation\\b",
+		"\\bvisible\\b",
 	}
 )
 

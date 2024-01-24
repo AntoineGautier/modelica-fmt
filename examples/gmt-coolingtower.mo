@@ -25,7 +25,7 @@ model Merkel "Cooling tower model based on Merkel's theory"
     "Nominal water outlet temperature"
     annotation (Dialog(group="Heat transfer"));
 
-  parameter Real fraFreCon(min=0, max=1, final unit="1") = 0.125
+  parameter Real fraFreCon(min=0, max=1, final unit="1") = if true then 0.125 else 0
     "Fraction of tower capacity in free convection regime"
     annotation (Dialog(group="Heat transfer"));
 

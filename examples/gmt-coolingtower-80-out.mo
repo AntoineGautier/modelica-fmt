@@ -24,7 +24,7 @@ model Merkel
   parameter Real fraFreCon(
     min=0,
     max=1,
-    final unit="1")=0.125
+    final unit="1")=if true then 0.125 else 0
     "Fraction of tower capacity in free convection regime"
     annotation (Dialog(group="Heat transfer"));
   replaceable parameter Buildings.Fluid.HeatExchangers.CoolingTowers.Data.UAMerkel UACor
