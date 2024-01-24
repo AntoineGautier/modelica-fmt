@@ -74,8 +74,8 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 			return true
 		}
 		return false
-	case parser.IFunction_argumentContext:
-		return 0 == l.inNamedArgument && 0 == l.inVector && (0 == l.inAnnotation || 0 < l.inModelAnnotation)
+	// case parser.IFunction_argumentContext:
+	// 	return 0 == l.inNamedArgument && 0 == l.inVector && (0 == l.inAnnotation || 0 < l.inModelAnnotation)
 	default:
 		return false
 	}

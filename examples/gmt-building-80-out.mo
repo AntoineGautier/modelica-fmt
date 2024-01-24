@@ -18,18 +18,14 @@ model building
   parameter Modelica.SIunits.TemperatureDifference delTBuiCoo=5
     "Nominal building supply and return chilled water temperature difference";
   Buildings.Controls.OBC.CDL.Continuous.Sources.Constant minTSet[nZon](
-    k=fill(
-      293.15,
-      nZon),
+    k=fill(293.15,nZon),
     y(
       each final unit="K",
       each displayUnit="degC"))
     "Minimum temperature set point"
     annotation (Placement(transformation(extent={{-290,230},{-270,250}})));
   Buildings.Controls.OBC.CDL.Continuous.Sources.Constant maxTSet[nZon](
-    k=fill(
-      297.15,
-      nZon),
+    k=fill(297.15,nZon),
     y(
       each final unit="K",
       each displayUnit="degC"))
@@ -69,8 +65,7 @@ model building
     annotation (Placement(transformation(extent={{-200,-60},{-180,-40}})));
   Buildings.Applications.DHC.Loads.BaseClasses.FlowDistribution disFloHea(
     redeclare package Medium=MediumW,
-    m_flow_nominal=sum(
-      terUni.mHeaWat_flow_nominal .* terUni.facSca),
+    m_flow_nominal=sum(terUni.mHeaWat_flow_nominal .* terUni.facSca),
     dp_nominal(
       displayUnit="Pa")=100000,
     have_pum=have_pum,
@@ -80,8 +75,7 @@ model building
     annotation (Placement(transformation(extent={{-140,-100},{-120,-80}})));
   Buildings.Applications.DHC.Loads.BaseClasses.FlowDistribution disFloCoo(
     redeclare package Medium=MediumW,
-    m_flow_nominal=sum(
-      terUni.mChiWat_flow_nominal .* terUni.facSca),
+    m_flow_nominal=sum(terUni.mChiWat_flow_nominal .* terUni.facSca),
     typDis=Buildings.Applications.DHC.Loads.Types.DistributionType.ChilledWater,
     dp_nominal(
       displayUnit="Pa")=100000,
