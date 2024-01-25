@@ -96,7 +96,10 @@ func (l *modelicaListener) insertSpaceBeforeToken(currentTokenText, previousToke
 	default:
 		return 0 == l.inAnnotation &&
 			   !tokenInGroup(previousTokenText, noSpaceAfterTokens, false) &&
-			   !tokenInGroup(currentTokenText, noSpaceBeforeTokens, false)
+			   !tokenInGroup(currentTokenText, noSpaceBeforeTokens, false) ||
+			   0 < l.inAnnotation &&
+			   !tokenInGroup(previousTokenText, noSpaceAroundTokensInAnnotation, false) &&
+			   !tokenInGroup(currentTokenText, noSpaceAroundTokensInAnnotation, false)
 	}
 }
 
@@ -147,6 +150,20 @@ var (
 		".",
 		// "-", "+", "^", "*", "/",
 		":", // array range constructor
+	}
+
+	noSpaceAroundTokensInAnnotation = []string{
+		"(", ")",
+		"[", "]",
+		"{", "}",
+		";",
+		"=",
+		"==",
+		"<>",
+		",",
+		".",
+		"-", "+", "^", "*", "/",
+		":",
 	}
 
 	// following rules only applied to limit line length
