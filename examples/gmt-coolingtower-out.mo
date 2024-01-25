@@ -4,7 +4,7 @@ model Merkel
   "Cooling tower model based on Merkel's theory"
   extends Buildings.Fluid.HeatExchangers.CoolingTowers.BaseClasses.CoolingTower;
   import cha=Buildings.Fluid.HeatExchangers.CoolingTowers.BaseClasses.Characteristics;
-  final parameter Modelica.SIunits.MassFlowRate mAir_flow_nominal=m_flow_nominal/ratWatAir_nominal
+  final parameter Modelica.SIunits.MassFlowRate mAir_flow_nominal=m_flow_nominal / ratWatAir_nominal
     "Nominal mass flow rate of air"
     annotation (Dialog(group="Fan"));
   parameter Real ratWatAir_nominal(
@@ -34,10 +34,10 @@ model Merkel
     choicesAllMatching=true,
     Placement(transformation(extent={{18,70},{38,90}})));
   parameter Real fraPFan_nominal(
-    unit="W/(kg/s)")=275/0.15
+    unit="W/(kg/s)")=275 / 0.15
     "Fan power divided by water mass flow rate at design condition"
     annotation (Dialog(group="Fan"));
-  parameter Modelica.SIunits.Power PFan_nominal=fraPFan_nominal*m_flow_nominal
+  parameter Modelica.SIunits.Power PFan_nominal=fraPFan_nominal * m_flow_nominal
     "Fan power"
     annotation (Dialog(group="Fan"));
   parameter Real yMin(
@@ -48,8 +48,8 @@ model Merkel
     between forced and free convection regime)"
     annotation (Dialog(group="Fan"));
   replaceable parameter cha.fan fanRelPow(
-    r_V={0,0.1,0.3,0.6,1},
-    r_P={0,0.1^3,0.3^3,0.6^3,1})
+    r_V={0, 0.1, 0.3, 0.6, 1},
+    r_P={0, 0.1 ^ 3, 0.3 ^ 3, 0.6 ^ 3, 1})
     constrainedby cha.fan
     "Fan relative power consumption as a function of control signal, fanRelPow=P(y)/P(y=1)"
     annotation (choicesAllMatching=true,
@@ -81,15 +81,15 @@ model Merkel
     pos=cha.normalizedPower(
       per=fanRelPow,
       r_V=y,
-      d=fanRelPowDer)*PFan_nominal,
+      d=fanRelPowDer) * PFan_nominal,
     neg=0,
-    x=y-yMin+yMin/20,
-    deltax=yMin/20)
+    x=y - yMin + yMin / 20,
+    deltax=yMin / 20)
     "Electric power consumed by fan"
     annotation (Placement(transformation(extent={{100,70},{120,90}}),
       iconTransformation(extent={{100,70},{120,90}})));
 protected
-  final parameter Real fanRelPowDer[size(fanRelPow.r_V,1)]=Buildings.Utilities.Math.Functions.splineDerivatives(
+  final parameter Real fanRelPowDer[size(fanRelPow.r_V, 1)]=Buildings.Utilities.Math.Functions.splineDerivatives(
     x=fanRelPow.r_V,
     y=fanRelPow.r_P,
     ensureMonotonicity=Buildings.Utilities.Math.Functions.isMonotonic(
@@ -125,27 +125,27 @@ initial equation
   assert(cha.normalizedPower(
     per=fanRelPow,
     r_V=yMin,
-    d=fanRelPowDer) >-1E-4,"The fan relative power consumption must be non-negative for y=0."+"\n   Obtained fanRelPow(0) = "+String(cha.normalizedPower(
+    d=fanRelPowDer) > - 1E-4, "The fan relative power consumption must be non-negative for y=0." + "\n   Obtained fanRelPow(0) = " + String(cha.normalizedPower(
     per=fanRelPow,
     r_V=yMin,
-    d=fanRelPowDer))+"\n   You need to choose different values for the parameter fanRelPow.");
-  assert(abs(1-cha.normalizedPower(
+    d=fanRelPowDer)) + "\n   You need to choose different values for the parameter fanRelPow.");
+  assert(abs(1 - cha.normalizedPower(
     per=fanRelPow,
     r_V=1,
-    d=fanRelPowDer)) < 1E-4,"The fan relative power consumption must be one for y=1."+"\n   Obtained fanRelPow(1) = "+String(cha.normalizedPower(
+    d=fanRelPowDer)) < 1E-4, "The fan relative power consumption must be one for y=1." + "\n   Obtained fanRelPow(1) = " + String(cha.normalizedPower(
     per=fanRelPow,
     r_V=1,
-    d=fanRelPowDer))+"\n   You need to choose different values for the parameter fanRelPow."+"\n   To increase the fan power, change fraPFan_nominal or PFan_nominal.");
+    d=fanRelPowDer)) + "\n   You need to choose different values for the parameter fanRelPow." + "\n   To increase the fan power, change fraPFan_nominal or PFan_nominal.");
 equation
-  connect(per.y,y)
+  connect(per.y, y)
     annotation (Line(points={{-22,58},{-40,58},{-40,80},{-120,80}},color={0,0,127}));
-  connect(per.TAir,TAir)
+  connect(per.TAir, TAir)
     annotation (Line(points={{-22,54},{-80,54},{-80,40},{-120,40}},color={0,0,127}));
-  connect(per.Q_flow,preHea.Q_flow)
+  connect(per.Q_flow, preHea.Q_flow)
     annotation (Line(points={{1,50},{12,50},{12,12},{-80,12},{-80,-60},{-40,-60}},color={0,0,127}));
-  connect(per.m_flow,mWat_flow.y)
+  connect(per.m_flow, mWat_flow.y)
     annotation (Line(points={{-22,42},{-34,42},{-34,29},{-49,29}},color={0,0,127}));
-  connect(TWatIn.y,per.TWatIn)
+  connect(TWatIn.y, per.TWatIn)
     annotation (Line(points={{-49,45},{-40,45},{-40,46},{-22,46}},color={0,0,127}));
   annotation (
     Icon(

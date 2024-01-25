@@ -46,7 +46,9 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 		parser.INamed_argumentContext:
 		if 0 == l.inAnnotation || 0 < l.inModelAnnotation {
 			return true
-		} else if 0 < l.inAnnotation {  // BUG: Despite within insertIndentBefore, the following rule yields no incremental indentation.
+		} else if 0 < l.inAnnotation {
+			// BUG: despite within insertIndentBefore, the following rule yields no incremental indentation
+			// vendor annotations starting with "__" even have missing indentation
 			matched, _ := regexp.MatchString(
 				"choice|^enable|iconTransformation|Placement|Dialog|Evaluate|^__",
 				rule.GetText())
@@ -80,36 +82,39 @@ func (l *modelicaListener) insertIndentBefore(rule antlr.ParserRuleContext) bool
 }
 
 // insertSpaceBeforeToken returns true if a space should be inserted before the current token
-func insertSpaceBeforeToken(currentTokenText, previousTokenText string) bool {
+func (l *modelicaListener) insertSpaceBeforeToken(currentTokenText, previousTokenText string) bool {
 	switch currentTokenText {
 	case "(":
 		// add a space before opening parens for the following exceptions
 		matched, _ := regexp.MatchString(
-			"annotation|if|then|and|else",
+			"\\bannotation\\b|\\bif\\b|\\bthen\\b|\\band\\b|\\bor\\b|\\belse\\b|\\belseif\\b",
 			previousTokenText)
 		if (matched) {
 			return true
 		}
 		fallthrough
 	default:
-		return !tokenInGroup(previousTokenText, noSpaceAfterTokens, false) &&
+		return 0 == l.inAnnotation &&
+			   !tokenInGroup(previousTokenText, noSpaceAfterTokens, false) &&
 			   !tokenInGroup(currentTokenText, noSpaceBeforeTokens, false)
 	}
 }
 
+// the following rule does not change the results: we get rid of it
+
 // insertNewlineBefore returns true if the rule should be on a new line
-func (l *modelicaListener) insertNewlineBefore(rule antlr.ParserRuleContext) bool {
-	switch rule.(type) {
-	case
-		parser.ICompositionContext,
-		parser.IEnumeration_literalContext,
-		parser.IEquationsContext,
-		parser.ICondition_attributeContext:
-		return true
-	default:
-		return false
-	}
-}
+// func (l *modelicaListener) insertNewlineBefore(rule antlr.ParserRuleContext) bool {
+// 	switch rule.(type) {
+// 	case
+// 		parser.ICompositionContext,
+// 		parser.IEnumeration_literalContext,
+// 		parser.IEquationsContext,
+// 		parser.ICondition_attributeContext:
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
 
 var (
 	// tokens which should *generally* not have a space after them
@@ -117,14 +122,14 @@ var (
 	noSpaceAfterTokens = []string{
 		"(",
 		"=",
-		"==",
-		"<>",
+		// "==",
+		// "<>",
 		".",
 		"[",
 		"{",
-		"-", "+", "^", "*", "/",
+		// "-", "+", "^", "*", "/",
 		";",
-		",",
+		// ",",
 		":", // array range constructor
 	}
 
@@ -136,14 +141,16 @@ var (
 		"}",
 		";",
 		"=",
-		"==",
-		"<>",
+		// "==",
+		// "<>",
 		",",
 		".",
-		"-", "+", "^", "*", "/",
+		// "-", "+", "^", "*", "/",
 		":", // array range constructor
 	}
 
+	// following rules only applied to limit line length
+	// not applied within element annotations
 	allowBreakAfterTokens = []string{
 		";",
 		"+",
@@ -152,8 +159,9 @@ var (
 		"<>",
 	}
 
-	// search for the following patterns is done with regexp.MatchString()
-	// use "\\bword\\b" to search exactly "word"
+	// following rules only applied to limit line length
+	// applied within element annotations: we only allow breaking annotations for ad hoc keywords
+	// search for the following patterns is done with regexp.MatchString(): use "\\bword\\b" to search exactly "word"
 	allowBreakBeforeTokens = []string{
 		"\".*\"",
 		"\\bcolor\\b",
@@ -342,8 +350,8 @@ func (l *modelicaListener) writeString(str string) {
 	if l.config.maxLineLength > 0 &&
 	   l.currentLineLength+charsOnFirstLine > l.config.maxLineLength &&
 	   !l.onNewLine &&
-	   (tokenInGroup(l.previousTokenText, allowBreakAfterTokens, false) ||
-	   tokenInGroup(str, allowBreakBeforeTokens, true)){
+	   (l.inAnnotation == 0 && tokenInGroup(l.previousTokenText, allowBreakAfterTokens, false) ||
+	    tokenInGroup(str, allowBreakBeforeTokens, true)){
 
 		l.writeNewline()
 		l.maybeIndent()
@@ -396,7 +404,7 @@ func (l *modelicaListener) getSpaceBefore(str string, dryRun bool) string {
 			indentation := l.indentation()
 			return strings.Repeat(spaceIndent, indentation)
 		}
-	} else if insertSpaceBeforeToken(str, l.previousTokenText) {
+	} else if l.insertSpaceBeforeToken(str, l.previousTokenText) {
 		// insert a space
 		return " "
 	}
@@ -458,9 +466,9 @@ func (l *modelicaListener) VisitTerminal(node antlr.TerminalNode) {
 }
 
 func (l *modelicaListener) EnterEveryRule(node antlr.ParserRuleContext) {
-	if l.insertNewlineBefore(node) && !l.onNewLine {
-		l.writeNewline()
-	}
+	// if l.insertNewlineBefore(node) && !l.onNewLine {
+	// 	l.writeNewline()
+	// }
 
 	if l.insertIndentBefore(node) {
 		if !l.onNewLine {
